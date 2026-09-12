@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fridge Recipe Matcher</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-emerald-50 min-h-screen font-sans">
+
+  <!-- Login Page -->
+  <div id="loginPage" class="flex items-center justify-center min-h-screen">
+    <div class="max-w-sm w-full bg-white p-6 rounded-2xl shadow-md border border-emerald-100">
+      <h1 class="text-2xl font-bold text-emerald-700 mb-4 text-center">🔐 Login</h1>
+      <input id="username" type="text" placeholder="Enter Username"
+             class="w-full border border-gray-300 p-2 rounded-lg mb-3 outline-none focus:ring-2 focus:ring-emerald-500">
+      <input id="password" type="password" placeholder="Enter Password"
+             class="w-full border border-gray-300 p-2 rounded-lg mb-3 outline-none focus:ring-2 focus:ring-emerald-500">
+      <button onclick="checkLogin()" 
+              class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-semibold transition">
+        Login
+      </button>
+      <p id="errorMsg" class="text-red-500 text-sm mt-2 hidden">❌ Invalid credentials</p>
+    </div>
+  </div>
+
+  <!-- Main Page -->
+  <div id="mainPage" class="hidden p-6">
+    <div class="max-w-xl mx-auto bg-white p-6 rounded-2xl shadow-md border border-amber-100">
+      <h1 class="text-2xl font-bold text-emerald-700 mb-2">🍳 Worldwide Recipe Matcher</h1>
+      <p class="text-xs text-gray-500 mb-4">Select your food preference to view worldwide Veg or Non-Veg dishes!</p>
+
+      <!-- Dietary Preference Switcher -->
+      <div class="flex items-center gap-6 mb-4 bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+        <span class="font-semibold text-emerald-800 text-sm">Food Preference:</span>
+        <label class="inline-flex items-center text-sm cursor-pointer font-medium text-gray-700">
+          <input type="radio" name="diet" value="veg" checked onchange="handleDietChange()" class="form-radio text-emerald-600 focus:ring-emerald-500">
+          <span class="ml-1.5">🌱 Vegetarian</span>
+        </label>
+        <label class="inline-flex items-center text-sm cursor-pointer font-medium text-gray-700">
+          <input type="radio" name="diet" value="non-veg" onchange="handleDietChange()" class="form-radio text-emerald-600 focus:ring-emerald-500">
+          <span class="ml-1.5">🍗 Non-Vegetarian</span>
+        </label>
+      </div>
+
+      <!-- Presets based on Diet -->
+      <p class="text-xs font-semibold text-gray-600 mb-2">Popular Dishes Preset:</p>
+      <div id="presetButtons" class="flex flex-wrap gap-2 mb-4"></div>
+
+      <!-- Ingredient Inputs -->
+      <label class="block text-xs font-semibold text-gray-600 mb-1">Your Kitchen Ingredients & Spices:</label>
+      <div class="flex gap-2 mb-2">
+        <input id="ingredientInput" type="text" placeholder="e.g. Garam Masala, Elaichi, Chicken, Paneer, Rice..." 
+               class="border border-gray-300 p-2 rounded-lg flex-1 outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+               onkeypress="if(event.key === 'Enter') addIngredient()">
+        <button onclick="addIngredient()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium text-sm">Add</button>
+      </div>
+      <div id="ingredientList" class="flex flex-wrap gap-2 mb-4 min-h-[28px]"></div>
+
+      <!-- Fridge Leftovers Section -->
+      <div class="mb-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
+        <h2 class="text-sm font-bold text-amber-800 mb-2">🥶 Check Fridge Leftovers</h2>
+        <div class="flex gap-2 mb-2">
+          <input id="leftoverItem" type="text" placeholder="e.g. Cooked rice, boiled chicken, leftover dal..." 
+                 class="border border-gray-300 p-2 rounded-lg flex-1 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+          <input id="daysStored" type="number" placeholder="Days" 
+                 class="border border-gray-300 p-2 rounded-lg w-20 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+      </div>
+
+      <button onclick="generateRecipes()" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-lg font-bold shadow-sm transition">
+        🔍 Find Matching Recipes
+      </button>
+
+      <!-- Results Container -->
+      <div id="results" class="mt-6 space-y-4 text-gray-800"></div>
+    </div>
+  </div>
+
+  <script>
+    const userIngredients = [];
+
+    // Worldwide Recipe Database
+    const globalRecipes = [
+      // VEGETARIAN WORLDWIDE
+      {
+        name: "Paneer Butter Masala (India)",
+        type: "veg",
+        keys: ["paneer", "garam masala", "elaichi", "butter", "tomato", "milk"],
+        ingredients: ["200g Paneer", "2 tbsp Butter", "1 tsp Garam Masala", "2 Elaichi pods", "1 cup Tomato Puree"],
+        steps: ["Sauté crushed elaichi and tomato puree in butter.", "Add garam masala and cream/milk.", "Toss paneer cubes and simmer for 5 minutes."]
+      },
+      {
+        name: "French Ratatouille (France)",
+        type: "veg",
+        keys: ["zucchini", "eggplant", "tomato", "bell pepper", "olive oil", "veggies"],
+        ingredients: ["1 Zucchini", "1 Eggplant", "2 Tomatoes", "1 Bell Pepper", "Olive Oil", "Herbs"],
+        steps: ["Slice vegetables into rounds.", "Arrange in a baking dish over tomato sauce.", "Drizzle olive oil and bake at 190°C for 40 minutes."]
+      },
+      {
+        name: "Middle Eastern Falafel Wrap (Middle East)",
+        type: "veg",
+        keys: ["chickpeas", "garlic", "parsley", "cumin", "pita"],
+        ingredients: ["1 cup Chickpeas", "2 cloves Garlic", "1/2 cup Parsley", "1 tsp Cumin", "Pita Bread"],
+        steps: ["Blend chickpeas, garlic, and parsley into a coarse paste.", "Form small balls and deep fry until golden brown.", "Serve inside pita bread."]
+      },
+      {
+        name: "Italian Pizza Margherita (Italy)",
+        type: "veg",
+        keys: ["flour", "cheese", "mozzarella", "tomato", "basil"],
+        ingredients: ["Pizza Dough", "1/2 cup Mozzarella Cheese", "Tomato Sauce", "Fresh Basil"],
+        steps: ["Spread tomato sauce on pizza dough.", "Top with mozzarella cheese.", "Bake at 220°C for 12 minutes, garnish with fresh basil."]
+      },
+      {
+        name: "Vegetable Fried Rice (China)",
+        type: "veg",
+        keys: ["cooked rice", "rice", "soy sauce", "veggies", "garlic"],
+        ingredients: ["2 cups Cooked Rice", "1 cup Mixed Veggies", "1 tbsp Soy Sauce", "2 cloves Garlic"],
+        steps: ["Sauté minced garlic and veggies in oil.", "Add leftover cooked rice and soy sauce.", "Stir-fry on high heat for 3 minutes."]
+      },
+
+      // NON-VEGETARIAN WORLDWIDE
+      {
+        name: "Indian Butter Chicken (India)",
+        type: "non-veg",
+        keys: ["chicken", "garam masala", "elaichi", "butter", "cream", "tomato"],
+        ingredients: ["300g Chicken", "2 tbsp Butter", "1 tsp Garam Masala", "2 Elaichi pods", "1/2 cup Cream"],
+        steps: ["Sear chicken pieces with butter and crushed elaichi.", "Add tomato gravy and garam masala.", "Simmer with heavy cream until chicken is cooked through."]
+      },
+      {
+        name: "Desi Egg Bhurji (India)",
+        type: "non-veg",
+        keys: ["eggs", "egg", "onion", "garam masala", "green chillies"],
+        ingredients: ["3 Eggs", "1 chopped Onion", "1 tsp Garam Masala", "1 Green Chilli", "1 tbsp Oil"],
+        steps: ["Sauté onions and green chillies in oil.", "Whisk eggs with garam masala and salt, pour into pan.", "Scramble continuously until fully cooked."]
+      },
+      {
+        name: "Japanese Chicken Ramen (Japan)",
+        type: "non-veg",
+        keys: ["noodles", "chicken", "egg", "soy sauce", "broth"],
+        ingredients: ["Ramen Noodles", "1 Boiled Egg", "100g Sliced Chicken", "2 cups Broth", "Soy Sauce"],
+        steps: ["Boil ramen noodles in chicken broth with soy sauce.", "Top with sliced chicken breast and halved soft-boiled egg."]
+      },
+      {
+        name: "Crispy British Fish & Chips (UK)",
+        type: "non-veg",
+        keys: ["fish", "flour", "potatoes", "oil", "lemon"],
+        ingredients: ["200g Fish Fillet", "1 cup Flour", "2 Potatoes", "Oil for frying"],
+        steps: ["Cut potatoes into thick chips and deep fry.", "Coat fish fillet in batter and fry until golden crispy.", "Serve hot with lemon wedges."]
+      },
+      {
+        name: "Mexican Beef Tacos (Mexico)",
+        type: "non-veg",
+        keys: ["beef", "meat", "taco shells", "cheese", "cumin", "chilli"],
+        ingredients: ["200g Ground Beef/Meat", "Taco Shells", "1/2 cup Shredded Cheese", "Taco Seasoning"],
+        steps: ["Cook ground meat with taco seasonings in a skillet.", "Fill taco shells with cooked meat.", "Top with cheese and serve."]
+      }
+    ];
+
+    function checkLogin() {
+      const user = document.getElementById("username").value.trim();
+      const pass = document.getElementById("password").value.trim();
+      document.getElementById("errorMsg").classList.add("hidden");
+      if (user === "Shadow Break" && pass === "SD262") {
+        document.getElementById("loginPage").classList.add("hidden");
+        document.getElementById("mainPage").classList.remove("hidden");
+        handleDietChange(); // Render presets on login
+      } else {
+        document.getElementById("errorMsg").classList.remove("hidden");
+      }
+    }
+
+    function handleDietChange() {
+      const diet = document.querySelector('input[name="diet"]:checked').value;
+      renderPresets(diet);
+      generateRecipes(); // Update recipes immediately when diet changes
+    }
+
+    function renderPresets(diet) {
+      const container = document.getElementById("presetButtons");
+      if (diet === 'veg') {
+        container.innerHTML = `
+          <button onclick="addPreset('Paneer')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs px-3 py-1.5 rounded-lg font-medium">🧀 Paneer Masala</button>
+          <button onclick="addPreset('Fried Rice')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs px-3 py-1.5 rounded-lg font-medium">🍚 Veg Fried Rice</button>
+          <button onclick="addPreset('Pizza')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs px-3 py-1.5 rounded-lg font-medium">🍕 Pizza</button>
+        `;
+      } else {
+        container.innerHTML = `
+          <button onclick="addPreset('Butter Chicken')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs px-3 py-1.5 rounded-lg font-medium">🍗 Butter Chicken</button>
+          <button onclick="addPreset('Egg Bhurji')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs px-3 py-1.5 rounded-lg font-medium">🍳 Egg Bhurji</button>
+          <button onclick="addPreset('Fish Chips')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs px-3 py-1.5 rounded-lg font-medium">🐟 Fish & Chips</button>
+        `;
+      }
+    }
+
+    function addPreset(type) {
+      if (type === 'Paneer') ['Paneer', 'Garam Masala', 'Elaichi', 'Butter'].forEach(i => addIngredient(i));
+      if (type === 'Fried Rice') ['Cooked Rice', 'Veggies', 'Soy Sauce'].forEach(i => addIngredient(i));
+      if (type === 'Pizza') ['Flour', 'Cheese', 'Tomato', 'Basil'].forEach(i => addIngredient(i));
+      if (type === 'Butter Chicken') ['Chicken', 'Butter', 'Garam Masala', 'Elaichi'].forEach(i => addIngredient(i));
+      if (type === 'Egg Bhurji') ['Eggs', 'Onion', 'Garam Masala'].forEach(i => addIngredient(i));
+      if (type === 'Fish Chips') ['Fish', 'Potatoes', 'Flour'].forEach(i => addIngredient(i));
+    }
+
+    function addIngredient(customValue) {
+      const input = document.getElementById("ingredientInput");
+      const val = (customValue || input.value).trim();
+      if (val !== "" && !userIngredients.map(i => i.toLowerCase()).includes(val.toLowerCase())) {
+        userIngredients.push(val);
+        renderIngredients();
+        if (!customValue) input.value = "";
+      }
+    }
+
+    function removeIngredient(index) {
+      userIngredients.splice(index, 1);
+      renderIngredients();
+    }
+
+    function renderIngredients() {
+      const container = document.getElementById("ingredientList");
+      container.innerHTML = userIngredients.map((item, idx) => `
+        <span class="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+          ${item}
+          <button onclick="removeIngredient(${idx})" class="text-emerald-600 hover:text-emerald-900 font-bold ml-1">&times;</button>
+        </span>
+      `).join('');
+    }
+
+    function generateRecipes() {
+      const resultsDiv = document.getElementById("results");
+      const diet = document.querySelector('input[name="diet"]:checked').value;
+      const leftoverInput = document.getElementById("leftoverItem").value.trim();
+      const days = parseInt(document.getElementById("daysStored").value);
+
+      let safetyBanner = "";
+      if (leftoverInput) {
+        if (!isNaN(days) && days > 3) {
+          safetyBanner = `<div class="p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg text-xs mb-3 font-semibold">
+            ⚠️ Safety Notice: Leftover "${leftoverInput}" stored for ${days} days may be unsafe to eat.
+          </div>`;
+        } else if (!isNaN(days)) {
+          safetyBanner = `<div class="p-3 bg-emerald-100 border border-emerald-300 text-emerald-800 rounded-lg text-xs mb-3 font-semibold">
+            ✅ Leftover safe: "${leftoverInput}" (${days} days old) is okay to use.
+          </div>`;
+        }
+      }
+
+      // Filter recipes based strictly on user choice (Veg vs Non-Veg)
+      const filteredRecipes = globalRecipes.filter(r => r.type === diet);
+
+      // Score based on matched user ingredients
+      const allInputs = [...userIngredients];
+      if (leftoverInput && (isNaN(days) || days <= 3)) allInputs.push(leftoverInput);
+
+      const scored = filteredRecipes.map(r => {
+        let score = 0;
+        allInputs.forEach(input => {
+          if (r.keys.some(k => k.includes(input.toLowerCase()) || input.toLowerCase().includes(k))) score++;
+        });
+        return { recipe: r, score };
+      }).sort((a, b) => b.score - a.score);
+
+      let outputHTML = safetyBanner;
+
+      // Render Top Matched Recipes
+      scored.forEach(item => {
+        const r = item.recipe;
+        outputHTML += `
+          <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-base font-bold text-emerald-800">${r.name}</h3>
+              <span class="text-[10px] px-2 py-0.5 rounded ${r.type === 'veg' ? 'bg-emerald-200 text-emerald-800' : 'bg-red-200 text-red-800'} font-bold">
+                ${r.type.toUpperCase()}
+              </span>
+            </div>
+            <p class="font-semibold text-xs text-gray-700 mt-2 mb-1">Ingredients:</p>
+            <ul class="list-disc list-inside text-xs text-gray-600 mb-3">
+              ${r.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+            </ul>
+            <p class="font-semibold text-xs text-gray-700 mb-1">Cooking Steps:</p>
+            <ol class="list-decimal list-inside text-xs text-gray-600 space-y-1">
+              ${r.steps.map(step => `<li>${step}</li>`).join('')}
+            </ol>
+          </div>
+        `;
+      });
+
+      resultsDiv.innerHTML = outputHTML;
+    }
+  </script>
+</body>
+</html>
